@@ -1,0 +1,74 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+import {Test} from "forge-std/Test.sol";
+import {SplitToken} from "../src/SplitToken.sol";
+import {SplitBill} from "../src/SplitBill.sol";
+
+contract SplitBillTest is Test {
+    SplitToken public splitToken;
+    SplitBill public splitBill;
+
+    address public alice = makeAddr("alice");
+    address public bob = makeAddr("bob");
+    address public carol = makeAddr("carol");
+
+    function setUp() public {
+        splitToken = new SplitToken();
+        splitBill = new SplitBill(address(splitToken));
+        splitToken.setSplitBill(address(splitBill));
+    }
+
+    function test_CreateGroup() public {
+        address[] memory members = new address[](3);
+        members[0] = alice;
+        members[1] = bob;
+        members[2] = carol;
+        uint256 groupId = splitBill.createGroup("Goa Trip", members);
+
+        assertEq(groupId, 0);
+        assertEq(splitBill.nextGroupId(), 1);
+    }
+
+    function test_RecordExpense() public {
+        address[] memory members = new address[](3);
+        members[0] = alice;
+        members[1] = bob;
+        members[2] = carol;
+
+        uint256 groupId = splitBill.createGroup("Goa Trip",members);
+        uint256 total =300;
+        vm.prank(alice);
+        splitBill.recordExpense(groupId,total);
+        uint256 share = total/3;
+
+        assertEq(splitBill.owed(groupId, bob, alice), share);
+        assertEq(splitBill.owed(groupId, carol, alice), share);
+        assertEq(splitBill.owed(groupId, alice, alice), 0);
+        assertEq(splitToken.balanceOf(alice), share * 2);
+
+    }
+
+    function test_SettleExpense() public{
+        address[] memory members = new address[](3);
+        members[0] = alice;
+        members[1] = bob;
+        members[2] = carol;
+        uint256 groupId = splitBill.createGroup("Goa Trip",members);
+        uint256 total =300;
+        vm.prank(alice);
+        splitBill.recordExpense(groupId,total);
+        uint256 share = total/3;
+        vm.deal(bob, share);
+        vm.prank(bob);
+        splitBill.settle{value: share}(groupId, alice);
+        assertEq(splitBill.owed(groupId, bob, alice), 0);
+        assertEq(splitToken.balanceOf(alice), share); // was 200, now 100 (Carol's share still owed)
+        assertEq(alice.balance, share);
+
+
+        
+        
+    }
+    
+}
