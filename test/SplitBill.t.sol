@@ -64,11 +64,44 @@ contract SplitBillTest is Test {
         splitBill.settle{value: share}(groupId, alice);
         assertEq(splitBill.owed(groupId, bob, alice), 0);
         assertEq(splitToken.balanceOf(alice), share); // was 200, now 100 (Carol's share still owed)
-        assertEq(alice.balance, share);
+        assertEq(alice.balance, share); 
+    }
+    function test_RevertWhen_NonMemberRecordsExpense() public {
+        address[] memory members = new address[](2);
+        members[0] = alice;
+        members[1] = bob;
+        uint256 groupId = splitBill.createGroup("Goa Trip", members);
+        address dave = makeAddr("dave");
+        vm.prank(dave);
+        vm.expectRevert(SplitBill.NotAMember.selector);
+        splitBill.recordExpense(groupId,100);
+    }
 
+    function test_RevertWhen_WrongSettlementAmount() public{
+        address[] memory members = new address[](2);
+        members[0] = alice;
+        members[1] = bob;
+        uint256 groupId = splitBill.createGroup("Goa Trip", members);
 
-        
-        
+        uint256 total = 200;
+        vm.prank(alice);
+        splitBill.recordExpense(groupId,total);
+
+        vm.deal(bob,1 ether);
+        vm.prank(bob);
+        vm.expectRevert(SplitBill.WrongPaymentAmount.selector);
+        splitBill.settle{value: 50}(groupId, alice);
+    }
+
+    function test_RevertWhen_SettlingNonexistentDebt() public{
+        address[] memory members = new address[](2);
+        members[0] = alice;
+        members[1] = bob;
+        uint256 groupId = splitBill.createGroup("Goa Trip", members);
+        vm.deal(carol, 1 ether);
+        vm.prank(carol);
+        vm.expectRevert(SplitBill.NothingOwed.selector);
+        splitBill.settle{value: 1}(groupId, alice);
     }
     
 }
