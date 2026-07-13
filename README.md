@@ -1,66 +1,24 @@
-## Foundry
+# SplitBill 🧾
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+An on-chain "who owes who" tracker. When friends split a bill, instead of a
+screenshot of Splitwise, the debt lives as an ERC20 balance on Sepolia — and
+settling up is a real transaction, not a promise.
 
-Foundry consists of:
+## 🚀 Live on Sepolia
 
-- **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
-- **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
-- **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
-- **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+| Contract   | Address                                      | Etherscan                                                                                                    |
+| ---------- | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| SplitToken | `0x5298c4eA578348AC4387865aCc69254da70e8ccB` | [View verified source](https://sepolia.etherscan.io/address/0x5298c4ea578348ac4387865acc69254da70e8ccb#code) |
+| SplitBill  | `0x22A0c96bDab95264cd75B0Cf2f9ec51838bFd5B6` | [View verified source](https://sepolia.etherscan.io/address/0x22a0c96bdab95264cd75b0cf2f9ec51838bfd5b6#code) |
 
-## Documentation
+Both contracts are verified — source code is publicly readable on Etherscan, not just bytecode.
 
-https://book.getfoundry.sh/
+## How it works
 
-## Usage
-
-### Build
-
-```shell
-$ forge build
-```
-
-### Test
-
-```shell
-$ forge test
-```
-
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+1. **Create a group** — a list of wallet addresses (your friends).
+2. **Record an expense** — whoever paid calls `recordExpense(groupId, amount)`.
+   The contract splits it evenly across the group and mints them **SPLIT**
+   tokens equal to what everyone else now owes them.
+3. **Settle up** — a debtor calls `settle(groupId, creditor)` with the exact
+   ETH amount owed. The contract forwards the ETH and burns the matching
+   SPLIT tokens. Debt paid, ledger clean.
