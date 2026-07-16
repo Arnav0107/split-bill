@@ -2,8 +2,10 @@
 pragma solidity ^0.8.20;
 
 import {SplitToken} from "./SplitToken.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract SplitBill {
+
+contract SplitBill is ReentrancyGuard{
     SplitToken public immutable splitToken;
 
     struct Group {
@@ -74,7 +76,7 @@ contract SplitBill {
 
     event Settled(uint256 indexed groupId, address indexed debtor, address indexed creditor, uint256 amount);
 
-    function settle(uint256 groupId, address creditor) external payable {
+    function settle(uint256 groupId, address creditor) external payable nonReentrant {
         uint256 debt = owed[groupId][msg.sender][creditor];
         if (debt == 0) revert NothingOwed();
         if (msg.value != debt) revert WrongPaymentAmount();

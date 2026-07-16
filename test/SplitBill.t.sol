@@ -103,4 +103,48 @@ contract SplitBillTest is Test {
         vm.expectRevert(SplitBill.NothingOwed.selector);
         splitBill.settle{value: 1}(groupId, alice);
     }
+
+    function testFuzz_RecordExpenseSplitsCorrectly(uint96 total)public {
+        vm.assume(total>0);
+
+        address[] memory members = new address[](3);
+        members[0] = alice;
+        members[1] = bob;
+        members[2] = carol;
+        uint256 groupId = splitBill.createGroup("Fuzz Trip", members);
+
+        vm.prank(alice);
+        splitBill.recordExpense(groupId, total);
+        uint256 share = total / 3;
+
+        assertEq(splitBill.owed(groupId, bob, alice), share);
+        assertEq(splitBill.owed(groupId, carol, alice), share);
+        assertEq(splitToken.balanceOf(alice), share * 2);
+
+    }
+
+    function testFuzz_SettleWorksForAnyValidAmount(uint96 total) public {
+    vm.assume(total >= 2); // needs to split across at least 2 people meaningfully
+
+    address[] memory members = new address[](2);
+    members[0] = alice;
+    members[1] = bob;
+    uint256 groupId = splitBill.createGroup("Fuzz Settle", members);
+
+    vm.prank(alice);
+    splitBill.recordExpense(groupId, total);
+
+    uint256 owedAmount = splitBill.owed(groupId, bob, alice);
+    vm.assume(owedAmount > 0); // skip cases where integer division rounds to 0
+
+    vm.deal(bob, owedAmount);
+    uint256 aliceBalanceBefore = alice.balance;
+
+    vm.prank(bob);
+    splitBill.settle{value: owedAmount}(groupId, alice);
+
+    assertEq(splitBill.owed(groupId, bob, alice), 0);
+    assertEq(alice.balance - aliceBalanceBefore, owedAmount);
+    assertEq(splitToken.balanceOf(alice), 0);
+}
 }
