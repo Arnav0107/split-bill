@@ -6,7 +6,7 @@ export const config = createConfig({
   chains: [sepolia],  
   connectors: [injected()],
   transports: {
-    [sepolia.id]: http(),
+    [sepolia.id]: http('https://sepolia.gateway.tenderly.co'),
   },
 })
 

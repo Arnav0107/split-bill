@@ -1,10 +1,16 @@
 import type { Metadata } from "next";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-sans",
+});
+
 export const metadata: Metadata = {
-  title: "SplitBill",
-  description: "On-chain expense splitter",
+  title: "SplitBill - Premium On-Chain Expense Splitter",
+  description: "A decentralized, trustless, and gasless expense sharing platform on-chain.",
 };
 
 export default function RootLayout({
@@ -13,12 +19,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body>
+    <html lang="en" className={plusJakartaSans.variable}>
+      <body className="antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>
   );
 }
-
-//Nested one level inside WagmiProvider — passes our single queryClient instance down, then renders children (the actual app content) inside both providers. Nesting order here (WagmiProvider outside, QueryClientProvider inside) matters because wagmi's hooks need both contexts available, and this is the order the wagmi docs specify.
