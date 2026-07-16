@@ -4,8 +4,7 @@ pragma solidity ^0.8.20;
 import {SplitToken} from "./SplitToken.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-
-contract SplitBill is ReentrancyGuard{
+contract SplitBill is ReentrancyGuard {
     SplitToken public immutable splitToken;
 
     struct Group {
