@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SplitToken} from "./SplitToken.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 contract SplitBill is ReentrancyGuard {
     SplitToken public immutable splitToken;
+    IERC20 public immutable settlementToken;
 
     struct Group {
         string name;
@@ -21,8 +23,9 @@ contract SplitBill is ReentrancyGuard {
 
     event GroupCreated(uint256 indexed groupId, string name, address[] members);
 
-    constructor(address _splitToken) {
+    constructor(address _splitToken, address _settlementToken) {
         splitToken = SplitToken(_splitToken);
+        settlementToken = IERC20(_settlementToken);
     }
 
     function createGroup(string calldata name, address[] calldata members) external returns (uint256 groupId) {
@@ -75,16 +78,27 @@ contract SplitBill is ReentrancyGuard {
 
     event Settled(uint256 indexed groupId, address indexed debtor, address indexed creditor, uint256 amount);
 
-    function settle(uint256 groupId, address creditor) external payable nonReentrant {
+    // function settle(uint256 groupId, address creditor) external payable nonReentrant {
+    //     uint256 debt = owed[groupId][msg.sender][creditor];
+    //     if (debt == 0) revert NothingOwed();
+    //     if (msg.value != debt) revert WrongPaymentAmount();
+    //     owed[groupId][msg.sender][creditor] = 0;
+    //     splitToken.burn(creditor, debt);
+
+    //     (bool success,) = payable(creditor).call{value: debt}("");
+    //     if (!success) revert TransferFailed();
+
+    //     emit Settled(groupId, msg.sender, creditor, debt);
+    // }
+
+    function settle(uint256 groupId, address creditor) external nonReentrant {
         uint256 debt = owed[groupId][msg.sender][creditor];
         if (debt == 0) revert NothingOwed();
-        if (msg.value != debt) revert WrongPaymentAmount();
+
         owed[groupId][msg.sender][creditor] = 0;
         splitToken.burn(creditor, debt);
 
-        (bool success,) = payable(creditor).call{value: debt}("");
+        bool success = settlementToken.transferFrom(msg.sender, creditor, debt);
         if (!success) revert TransferFailed();
-
-        emit Settled(groupId, msg.sender, creditor, debt);
     }
 }
